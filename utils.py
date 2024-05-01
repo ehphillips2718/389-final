@@ -115,7 +115,7 @@ def plot_results(results, title, y_label, baseline, noisy_results=False):
     
     # Take 100 episode averages and plot them too
     MAX_AVG_LENGTH = 100
-    r_means  = [r_t[max(0, i - MAX_AVG_LENGTH):i+1].mean(0) for i in range(len(r_t))]
+    r_means  = [r_t[max(0, i+1 - MAX_AVG_LENGTH):i+1].mean() for i in range(len(r_t))]
     plt.plot(r_means, color='g', label='Running Average Results')
     plt.plot(np.full(len(r_t), r_means[-1]), color='r', label=f'Final Average: {r_means[-1]}')
     plt.legend()
