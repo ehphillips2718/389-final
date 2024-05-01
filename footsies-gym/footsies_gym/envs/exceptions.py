@@ -1,0 +1,2 @@
+class FootsiesGameClosedError(RuntimeError):
+    pass
