@@ -8,7 +8,7 @@ for i in range(NUM_MODELS):
     start_time = utils.time.time()
     hyper_params = {
         'model_shape':  (11, utils.np.random.randint(40, 200), utils.np.random.randint(20, 100), 8), # shape of model
-        'num_episodes': 200,                                                                         # number of episodes
+        'num_episodes': 100,                                                                         # number of episodes
         'memory_size':  utils.np.random.randint(1000, 10000),                                        # size of memory buffer
         'batch_size':   utils.np.random.randint(64, 256),                                            # number of transitions sampled from the replay buffer
         'gamma':        0.1 * utils.np.random.random() + 0.9,                                        # discount factor
