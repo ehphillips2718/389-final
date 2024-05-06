@@ -181,6 +181,10 @@ class FootsiesEnv(gym.Env):
         # Keep track of the total reward during this episode
         # Only used when dense rewards are enabled
         self._cummulative_episode_reward = 0.0
+        #self._max_dist_p1 = 0.0
+        #self._min_dist_p1 = 0.0
+        #self._max_dist_p2 = 0.0
+        #self._min_dist_p2 = 0.0
 
         # Keep track of whether the current episode is finished
         # Necessary when calling reset() when it isn't finished, which will require a hard reset
@@ -377,9 +381,27 @@ class FootsiesEnv(gym.Env):
         """Get the dense reward from this environment step. Sums up to 1 or -1 on win/loss, but is also given when inflicting/dealing guard damage (0.3 and -0.3, respectively)"""
         reward = 0.0
         if next_state.p1Guard < state.p1Guard:
-            reward -= 0.3
+            reward -= 0.25 # modified to 0.25 from 0.3
         if next_state.p2Guard < state.p2Guard:
-            reward += 0.3
+            reward += 0.25 # modified to 0.25 from 0.3
+
+        reward += 0.125 * (next_state.p1Position - state.p1Position)/3.98
+        reward += 0.125 * (next_state.p2Position - state.p2Position)/3.98
+
+        #if next_state.p1Position > self._max_dist_p1:
+        #    reward += 0.05 * (next_state.p1Position - self._max_dist_p1) / 5.98 # [0, 5.98] normalized to [0, 1], then scaled by 0.05
+        #    self._max_dist_p1 = next_state.p1Position
+        #if next_state.p1Position < self._min_dist_p1:
+        #    reward += 0.025 * (next_state.p1Position - self._min_dist_p1) / 2.6 # [-2.6, 0] normalized to [-1, 0], then scaled by 0.025
+        #    self._min_dist_p1 = next_state.p1Position
+        #    
+        #if next_state.p2Position < self._max_dist_p2:
+        #    reward += 0.05 * (next_state.p2Position - self._max_dist_p2) / 5.98 # [-5.98, 0] normalized to [-1, 0], then scaled by 0.05
+        #    self._max_dist_p2 = next_state.p2Position
+        #if next_state.p2Position > self._min_dist_p2:
+        #    reward += 0.025 * (next_state.p2Position - self._min_dist_p2) / 2.6 # [0, 2.6] normalized to [0, 1], then scaled by 0.025
+        #    self._min_dist_p2 = next_state.p2Position
+        
 
         self._cummulative_episode_reward += reward
 
@@ -478,6 +500,10 @@ class FootsiesEnv(gym.Env):
         
         self.delayed_frame_queue.clear()
         self._cummulative_episode_reward = 0.0
+        #self._max_dist_p1 = 0.0
+        #self._min_dist_p1 = 0.0
+        #self._max_dist_p2 = 0.0
+        #self._min_dist_p2 = 0.0
 
         first_state = self._receive_and_update_state()
         # Guarantee it's the first environment state
