@@ -251,10 +251,12 @@ def vs_train(env, hyper_params, policy_net, target_net, optimizer, memory_p1, me
                 break
 
 def play(env, policy_net):
+    actions = []
     state, _ = env.reset()
     state = state_to_tensor(state)
     for t in count():
         action = select_action(state, policy_net)
+        actions.append(action)
         next_state, reward, terminated, _, _ = env.step(index_to_action(action))
 
         next_state = state_to_tensor(next_state)
@@ -265,7 +267,7 @@ def play(env, policy_net):
             reward = reward.cpu()[0]
             won = env.delayed_frame_queue[-1].p2Vital == 0
             break
-    return won
+    return (t, reward, won, actions)
 
 def self_play(env, policy_net):
     state, _ = env.reset()
@@ -317,7 +319,7 @@ def plot_avg_results(results, title, y_label, baseline, avg_length=100, noisy_re
     if noisy_results:
         plt.plot(r_t, color='k', label='Noisy Results')
     
-    r_means = [r_t[max(0, i+1 - avg_length):i+1].mean() for i in range(len(r_t))]
+    r_means = [r_t[0:i+1].mean() for i in range(len(r_t))]
     plt.plot(r_means, color='g', label='Running Average Results')
     plt.plot(np.full(len(r_t), r_means[-1]), color='r', label=f'Final Average: {r_means[-1]}')
     plt.legend()
