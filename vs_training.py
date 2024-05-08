@@ -1,9 +1,9 @@
 import utils
 
-def tuning(index_p1, index_p2, env, version=0, episodes=100):
+def tuning(index_p1, index_p2, env, episodes=100):
     start_time = utils.time.time()
-    model_p1 = utils.torch.load(f'models/model_v{version - 1}_{index_p1[0]}_{index_p1[1]}')
-    model_p2 = utils.torch.load(f'models/model_v{version - 1}_{index_p2[0]}_{index_p2[1]}')
+    model_p1 = utils.torch.load(f'models/model_v{index_p1[0]}_{index_p1[1]}_{index_p1[2]}')
+    model_p2 = utils.torch.load(f'models/model_v{index_p2[0]}_{index_p2[1]}_{index_p2[2]}')
     hyper_params_p1 = {
         'model_shape':  model_p1['hyper_params']['model_shape'], # shape of model
         'num_episodes': episodes,                                # number of episodes
@@ -45,12 +45,15 @@ def tuning(index_p1, index_p2, env, version=0, episodes=100):
     target_net_p2.load_state_dict(policy_net_p2.state_dict())
     optimizer_p2 = utils.optim.AdamW(policy_net_p2.parameters(), lr=hyper_params_p2['lr'], amsgrad=True)
 
+    model_p1 = {}
+    model_p2 = {}
+
     memory_p1_1 = utils.ReplayMemory(hyper_params_p1['memory_size'])
     memory_p1_2 = utils.ReplayMemory(hyper_params_p1['memory_size'])
     memory_p2_1 = utils.ReplayMemory(hyper_params_p2['memory_size'])
     memory_p2_2 = utils.ReplayMemory(hyper_params_p2['memory_size'])
     results_p1 = {'length': [], 'win_loss': [], 'rewards': []}
-    utils.vs_train(env, (hyper_params_p1, hyper_params_p2), (policy_net_p1, policy_net_p2), (target_net_p2, target_net_p2), (optimizer_p1, optimizer_p2), (memory_p1_1, memory_p2_1), (memory_p1_2, memory_p2_2), results_p1)
+    utils.vs_train(env, (hyper_params_p1, hyper_params_p2), (policy_net_p1, policy_net_p2), (target_net_p1, target_net_p2), (optimizer_p1, optimizer_p2), (memory_p1_1, memory_p2_1), (memory_p1_2, memory_p2_2), results_p1)
     results_p2 = {'length': results_p1['length'], 'win_loss': [not x for x in results_p1['win_loss']], 'rewards': [-x for x in results_p1['rewards']]}
 
     model_p1 = {
@@ -65,17 +68,18 @@ def tuning(index_p1, index_p2, env, version=0, episodes=100):
         'policy_net':   policy_net_p2.state_dict(), 
         'optimizer':    optimizer_p2.state_dict()
     }
-    utils.torch.save(model_p1, f'models/model_v{version}_{index_p1[0]}_{index_p1[1]}')
-    utils.torch.save(model_p2, f'models/model_v{version}_{index_p2[0]}_{index_p2[1]}')
+    utils.torch.save(model_p1, f'models/model_v{index_p1[0] + 1}_{index_p1[1]}_{index_p1[2]}')
+    utils.torch.save(model_p2, f'models/model_v{index_p2[0] + 1}_{index_p2[1]}_{index_p2[2]}')
 
     end_time = utils.time.time()
     elapsed = end_time - start_time
     r_t = utils.np.array(results_p1["win_loss"], dtype=utils.np.float32)
-    avg = r_t[len(r_t) - 100: len(r_t)].mean(0)
-    print(f'Model ({index_p1[0]},{index_p1[1]}) vs Model ({index_p2[0]},{index_p2[1]}) completed in {elapsed:.2f} seconds with win percentage {avg:.2f}.')
+    print(f'Model ({index_p1[0]},{index_p1[1]},{index_p1[2]}) vs Model ({index_p2[0]},{index_p2[1]},{index_p2[2]}) completed in {elapsed:.2f} seconds with win percentage {r_t.mean(0)}.')
 
 env = utils.FootsiesEnv(frame_delay=16, sync_mode='synced_blocking', dense_reward=True, fast_forward=True, opponent=(lambda obs, info: None))
-index_p1 = (11, 0)
-index_p2 = (17, 6)
-tuning(index_p1, index_p2, env, version=0, episodes=100)
+index_p1 = (6, 0, 11)
+models = [(10, 0, 6), (12, 17, 6), (10, 0, 15), (12, 11, 0), (10, 0, 5)]
+for index_p2 in reversed(models):
+    tuning(index_p1, index_p2, env, episodes=500)
+    index_p1 = (index_p1[0] + 1, index_p1[1], index_p1[2])
 env.close()

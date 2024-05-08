@@ -217,9 +217,9 @@ def vs_train(env, hyper_params, policy_net, target_net, optimizer, memory_p1, me
             reward_p2 = torch.tensor([-reward], device=device)
 
             memory_p1[0].push(state_p1, action_p1, next_state_p1, reward_p1)
-            memory_p2[0].push(state_p2, action_p1, next_state_p2, reward_p2)
+            memory_p2[0].push(state_p2, action_p2, next_state_p2, reward_p2)
             memory_p1[1].push(state_p1, action_p1, next_state_p1, reward_p1)
-            memory_p2[1].push(state_p2, action_p1, next_state_p2, reward_p2)
+            memory_p2[1].push(state_p2, action_p2, next_state_p2, reward_p2)
 
             optimize_model(policy_net[0], target_net[0], optimizer[0], memory_p1[0], hyper_params[0])
             optimize_model(policy_net[0], target_net[0], optimizer[0], memory_p2[0], hyper_params[0])
@@ -274,6 +274,26 @@ def self_play(env, policy_net):
         action = select_action(state_p1, policy_net)
         env.opponent = lambda obs, info: index_to_action(select_action(state_p2, policy_net))
         next_state, reward, terminated, _, _ = env.step(index_to_action(action))
+
+        next_state_p1, next_state_p2 = state_to_tensor(next_state, p1_only=False)
+        reward = torch.tensor([reward], device=device)
+        state_p1 = next_state_p1
+        state_p2 = next_state_p2
+
+        if terminated:
+            reward = reward.cpu()[0]
+            won = env.delayed_frame_queue[-1].p2Vital == 0
+            break
+    return won
+
+def vs_play(env, policy_net_p1, policy_net_p2):
+    state, _ = env.reset()
+    state_p1, state_p2 = state_to_tensor(state, p1_only=False)
+    for t in count():
+        action_p1 = select_action(state_p1, policy_net_p1)
+        action_p2 = select_action(state_p2, policy_net_p2)
+        env.opponent = lambda obs, info: index_to_action(action_p2)
+        next_state, reward, terminated, _, _ = env.step(index_to_action(action_p1))
 
         next_state_p1, next_state_p2 = state_to_tensor(next_state, p1_only=False)
         reward = torch.tensor([reward], device=device)
